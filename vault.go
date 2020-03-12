@@ -23,15 +23,15 @@ func getVaultLoginURL(URL string) (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	vaultAuthURL = fmt.Sprintf("%s%s%s", parsedURL.Scheme, parsedURL.Host, vaultAuthEndpoint)
+	vaultAuthURL = fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Host, vaultAuthEndpoint)
 
 	return vaultAuthURL, nil
 }
 
 // get secret from vault
-func getVaultSecret(URL, authToken string) (map[string]interface{}, error) {
-	var secrets map[string]interface{}
-	var responseJSON map[string]interface{}
+func getVaultSecret(URL, authToken string) (string, error) {
+	var secrets string
+	var parsedResponse map[string]interface{}
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: vaultSkipTLS}
 	client := &http.Client{
@@ -59,25 +59,30 @@ func getVaultSecret(URL, authToken string) (map[string]interface{}, error) {
 		return secrets, err
 	}
 
-	if err := json.Unmarshal(respBodyBytes, &responseJSON); err != nil {
+	if err := json.Unmarshal(respBodyBytes, &parsedResponse); err != nil {
 		return secrets, err
 	}
 
-	secrets = responseJSON["data"].(map[string]interface{})
+	secrets, err = mapToJSON(parsedResponse["data"].(map[string]interface{}))
+	if err != nil {
+		return secrets, nil
+	}
 
 	return secrets, nil
 }
 
 // get secret from vault
-func vaultGetSecret(config applicationConfig) (map[string]interface{}, error) {
-	var secrets map[string]interface{}
-	var vaultToken string
+func vaultGetSecret(config applicationConfig) (string, error) {
+	vaultToken := config.VaultToken
+	var secrets string
 	var err error
 
-	if config.VaultToken != "" {
-		vaultToken = config.VaultToken
-	} else {
-		vaultToken, _ = getK8SVaultToken(config.VaultSecretURL)
+	// issue new vault token if it was not set from config
+	if config.VaultToken == "" {
+		vaultToken, err = getK8SVaultToken(config.VaultSecretURL)
+		if err != nil {
+			return secrets, err
+		}
 	}
 
 	secrets, err = getVaultSecret(config.VaultSecretURL, vaultToken)

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -25,11 +23,11 @@ func createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret string) (*session.Sessio
 	return awsSession, err
 }
 
-func getAWSSecret(secretName, AWSRegion, AWSKeyID, AWSKeySecret string) (map[string]interface{}, error) {
-	var secrets map[string]interface{}
+func getAWSSecretString(secretName, AWSRegion, AWSKeyID, AWSKeySecret string) (string, error) {
+	var secret string
 	awsSession, err := createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret)
 	if err != nil {
-		return secrets, err
+		return secret, err
 	}
 
 	awsService := secretsmanager.New(awsSession)
@@ -40,12 +38,10 @@ func getAWSSecret(secretName, AWSRegion, AWSKeyID, AWSKeySecret string) (map[str
 
 	awsResponse, err := awsService.GetSecretValue(awsRequest)
 	if err != nil {
-		return secrets, err
+		return secret, err
 	}
 
-	if err := json.Unmarshal([]byte(*awsResponse.SecretString), &secrets); err != nil {
-		return secrets, err
-	}
+	secret = *awsResponse.SecretString
 
-	return secrets, err
+	return secret, err
 }

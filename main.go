@@ -17,10 +17,14 @@ type applicationConfig struct {
 	AWSRegion              string
 	AWSKeyID               string
 	AWSKeySecret           string
+	Debug		       *bool
 }
 
 func initializeConfiguration() applicationConfig {
+	// default configuration
 	c := &applicationConfig{}
+        c.SecretProvider = "none"
+	c.AWSRegion = "us-east-1"
 
 	// cli arguments
 	argVaultSecret := flag.String("vault-secret", "", "Vault secret URL - https://vault.example.io/v1/storage/secret\nenv: VAULT_SECRET\n")
@@ -30,7 +34,10 @@ func initializeConfiguration() applicationConfig {
 	argAWSKeyID := flag.String("aws-key-id", "", "AWS account ID\nenv: AWS_ACCESS_KEY_ID\n")
 	argAWSKeySecret := flag.String("aws-key-secret", "", "AWS account secret\nAWS_SECRET_ACCESS_KEY\n")
 	argTemplatePath := flag.String("template", "", "Path to template file - /app/config/production.template\nenv: TEMPLATE_PATH\n")
+	c.Debug = flag.Bool("debug", false, "Enable debug information\n")
+
 	flag.Parse()
+
 
 	// vault secret
 	envVaultSecret := os.Getenv("VAULT_SECRET")
@@ -70,9 +77,6 @@ func initializeConfiguration() applicationConfig {
 	if *argAWSRegion != "" {
 		c.AWSRegion = *argAWSRegion
 	}
-	if c.AWSRegion == "" {
-		c.AWSRegion = "us-east-1"
-	}
 
 	// aws id
 	envAWSKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
@@ -106,9 +110,13 @@ func initializeConfiguration() applicationConfig {
 
 func main() {
 	// initialize configuration
-	var secrets map[string]interface{}
+	var secrets string
 	var err error
 	config := initializeConfiguration()
+
+        if *config.Debug {
+                fmt.Printf("Secret provider: %s", config.SecretProvider)
+        }
 
 	// get secrets
 	switch config.SecretProvider {
@@ -120,21 +128,21 @@ func main() {
 		}
 
 	case "aws":
-		secrets, err = getAWSSecret(config.AWSSecretName, config.AWSRegion, config.AWSKeyID, config.AWSKeySecret)
+		secrets, err = getAWSSecretString(config.AWSSecretName, config.AWSRegion, config.AWSKeyID, config.AWSKeySecret)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 			os.Exit(1)
 		}
 	}
 
-	// generate output
-	output, err := renderOutput(secrets, config.TemplatePath)
+	// render output as template,json or text
+	secrets, err = renderOutput(secrets, config.TemplatePath)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		os.Exit(1)
 	}
 
-	// show output and exit
-	fmt.Println(output)
+	// show secrets output and exit
+	fmt.Println(secrets)
 	os.Exit(0)
 }

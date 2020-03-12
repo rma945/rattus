@@ -1,3 +1,4 @@
 *.template
 go.sum
 rattus
+rattus.upx

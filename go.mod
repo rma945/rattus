@@ -1,4 +1,4 @@
-module keelson-key
+module rattus
 
 go 1.14
 

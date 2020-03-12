@@ -14,32 +14,36 @@ func templateDatetime() string {
 	return timeNow.Format("2006-01-02-15:04:05")
 }
 
+// register custom go template functions
 func registerTemplateFunctions() template.FuncMap {
 	return template.FuncMap{
 		"datetime": templateDatetime,
 	}
 }
 
+// render template
 func generateTemplate(templatePath string, values map[string]interface{}) (string, error) {
+	var renderedTemplate string
 
 	templateFileContent, err := ioutil.ReadFile(templatePath)
 	if err != nil {
-		return "", err
+		return renderedTemplate, err
 	}
 
 	templateFunctions := registerTemplateFunctions()
 	templateRender, err := template.New("template").Funcs(templateFunctions).Parse(string(templateFileContent))
 	if err != nil {
-		return "", err
+		return renderedTemplate, err
 	}
 
 	templateRederBuffer := &bytes.Buffer{}
 	err = templateRender.Execute(templateRederBuffer, values)
 	if err != nil {
-		return "", err
+		return renderedTemplate, err
 	}
+	renderedTemplate = templateRederBuffer.String()
 
-	return templateRederBuffer.String(), nil
+	return renderedTemplate, nil
 }
 
 // convert map of interface to JSON
@@ -52,21 +56,28 @@ func mapToJSON(values map[string]interface{}) (string, error) {
 	return string(JSON), nil
 }
 
-func renderOutput(secrets map[string]interface{}, templatePath string) (string, error) {
-	var stdout string
+// render template or return plain secrets text
+func renderOutput(secretsString, templatePath string) (string, error) {
+	var secretsMap map[string]interface{}
+	var secretsOutput string
 	var err error
 
+	secretsOutput = secretsString
+
+	// try to convert json secrets to map interfaces or return plan secret value
+	err = json.Unmarshal([]byte(secretsString), &secretsMap)
+	if err != nil {
+		return secretsOutput, nil
+	}
+
+	// render secrets as template
 	if templatePath != "" {
-		stdout, err = generateTemplate(templatePath, secrets)
+		secretsOutput, err = generateTemplate(templatePath, secretsMap)
 		if err != nil {
-			return stdout, fmt.Errorf("failed to render secrets template - %s", err)
-		}
-	} else {
-		stdout, err = mapToJSON(secrets)
-		if err != nil {
-			return stdout, fmt.Errorf("failed to convert secrets at json - %s", err)
+			return secretsOutput, fmt.Errorf("failed to render secrets template - %s", err)
 		}
 	}
 
-	return stdout, nil
+	// return plain json
+	return secretsOutput, nil
 }
