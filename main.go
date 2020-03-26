@@ -17,13 +17,13 @@ type applicationConfig struct {
 	AWSRegion              string
 	AWSKeyID               string
 	AWSKeySecret           string
-	Debug		       *bool
+	Debug                  *bool
 }
 
 func initializeConfiguration() applicationConfig {
 	// default configuration
 	c := &applicationConfig{}
-        c.SecretProvider = "none"
+	c.SecretProvider = "none"
 	c.AWSRegion = "us-east-1"
 
 	// cli arguments
@@ -37,7 +37,6 @@ func initializeConfiguration() applicationConfig {
 	c.Debug = flag.Bool("debug", false, "Enable debug information\n")
 
 	flag.Parse()
-
 
 	// vault secret
 	envVaultSecret := os.Getenv("VAULT_SECRET")
@@ -63,6 +62,7 @@ func initializeConfiguration() applicationConfig {
 	envAWSSecretName := os.Getenv("AWS_SECRET_NAME")
 	if envAWSSecretName != "" {
 		c.AWSSecretName = envAWSSecretName
+		c.SecretProvider = "aws"
 	}
 	if *argAWSSecretName != "" {
 		c.AWSSecretName = *argAWSSecretName
@@ -114,9 +114,9 @@ func main() {
 	var err error
 	config := initializeConfiguration()
 
-        if *config.Debug {
-                fmt.Printf("Secret provider: %s", config.SecretProvider)
-        }
+	if *config.Debug {
+		fmt.Printf("Secret provider: %s", config.SecretProvider)
+	}
 
 	// get secrets
 	switch config.SecretProvider {
