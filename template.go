@@ -46,16 +46,6 @@ func generateTemplate(templatePath string, values map[string]interface{}) (strin
 	return renderedTemplate, nil
 }
 
-// convert map of interface to JSON
-func mapToJSON(values interface{}) (string, error) {
-	JSON, err := json.Marshal(values)
-	if err != nil {
-		return "", err
-	}
-
-	return string(JSON), nil
-}
-
 // render template or return plain secrets text
 func renderOutput(secretsString, templatePath string) (string, error) {
 	var secretsMap map[string]interface{}

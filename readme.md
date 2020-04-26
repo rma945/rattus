@@ -17,10 +17,12 @@ But your production environment, deployed at AWS ECS and you can`t use same cred
 # Usage example
 
 Create a shell script, that will be launch at your application startup with followed content:
+
 ```bash
 #!/bin/sh
 /bin/rattus > /app/config.json
 ```
+
 And that's all! ``Rattus`` will get credentials, render template file, and save the output to application config.
 Now you can use this script in every environment, and you will get the same credentials provisioning workflow. All that you need to change - environment variables, that can be easily changed.
 
