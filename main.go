@@ -129,7 +129,7 @@ func initializeConfiguration() applicationConfig {
 		c.AzureClientSecret = *argAzureClientSecret
 	}
 
-	envAzureVault := os.Getenv("AZURE_CLIENT_SECRET")
+	envAzureVault := os.Getenv("AZURE_VAULT")
 	if envAzureVault != "" {
 		c.AzureVault = envAzureVault
 		c.SecretProvider = "azure"
@@ -172,6 +172,13 @@ func main() {
 
 	case "aws":
 		secrets, err = getAWSSecretString(config.AWSSecretName, config.AWSRegion, config.AWSKeyID, config.AWSKeySecret)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+			os.Exit(1)
+		}
+
+	case "azure":
+		secrets, err = getAzureSecrets(config.AzureTenantID, config.AzureClientID, config.AzureClientSecret, config.AzureVault)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 			os.Exit(1)
