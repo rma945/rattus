@@ -63,9 +63,12 @@ func getVaultSecret(URL, authToken string) (string, error) {
 		return secrets, err
 	}
 
-	secrets, err = mapToJSON(parsedResponse["data"].(map[string]interface{}))
-	if err != nil {
-		return secrets, nil
+	if parsedResponse["data"].(map[string]interface{})["metadata"] != nil {
+		// vault v2 secret
+		secrets, err = mapToJSON(parsedResponse["data"].(map[string]interface{})["data"])
+	} else {
+		// vault v1 secret
+		secrets, err = mapToJSON(parsedResponse["data"].(map[string]interface{}))
 	}
 
 	return secrets, nil

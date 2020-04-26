@@ -47,7 +47,7 @@ func generateTemplate(templatePath string, values map[string]interface{}) (strin
 }
 
 // convert map of interface to JSON
-func mapToJSON(values map[string]interface{}) (string, error) {
+func mapToJSON(values interface{}) (string, error) {
 	JSON, err := json.Marshal(values)
 	if err != nil {
 		return "", err
