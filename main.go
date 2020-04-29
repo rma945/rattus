@@ -38,10 +38,10 @@ func initializeConfiguration() applicationConfig {
 	argAWSKeyID := flag.String("aws-key-id", "", "AWS account ID\nenv: AWS_ACCESS_KEY_ID\n")
 	argAWSKeySecret := flag.String("aws-key-secret", "", "AWS account secret\nAWS_SECRET_ACCESS_KEY\n")
 	argTemplatePath := flag.String("template", "", "Path to template file - /app/config/production.template\nenv: TEMPLATE_PATH\n")
-	argAzureTenantID := flag.String("azure-tenant-id", "", "Azure tenant ID\nAZURE_TENANT_ID\n")
-	argAzureClientID := flag.String("azure-client-id", "", "Azure client ID\nAZURE_CLIENT_ID\n")
-	argAzureClientSecret := flag.String("azure-client-secret", "", "Azure client Secret\nAZURE_CLIENT_SECRET\n")
-	argAzureVault := flag.String("azure-vault", "", "Azure keyvault storage URL - https://example-key-vault.vault.azure.net/\nAZURE_VAULT\n")
+	argAzureTenantID := flag.String("azure-tenant-id", "", "Azure tenant ID\nenv: AZURE_TENANT_ID\n")
+	argAzureClientID := flag.String("azure-client-id", "", "Azure client ID\nenv: AZURE_CLIENT_ID\n")
+	argAzureClientSecret := flag.String("azure-client-secret", "", "Azure client Secret\nenv: AZURE_CLIENT_SECRET\n")
+	argAzureVault := flag.String("azure-vault", "", "Azure keyvault storage URL - https://example-key-vault.vault.azure.net/\nenv: AZURE_VAULT\n")
 
 	c.Debug = flag.Bool("debug", false, "Enable debug information\n")
 
