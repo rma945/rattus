@@ -17,6 +17,10 @@ type applicationConfig struct {
 	AWSRegion              string
 	AWSKeyID               string
 	AWSKeySecret           string
+	AzureTenantID          string
+	AzureClientID          string
+	AzureClientSecret      string
+	AzureVault             string
 	Debug                  *bool
 }
 
@@ -34,6 +38,11 @@ func initializeConfiguration() applicationConfig {
 	argAWSKeyID := flag.String("aws-key-id", "", "AWS account ID\nenv: AWS_ACCESS_KEY_ID\n")
 	argAWSKeySecret := flag.String("aws-key-secret", "", "AWS account secret\nAWS_SECRET_ACCESS_KEY\n")
 	argTemplatePath := flag.String("template", "", "Path to template file - /app/config/production.template\nenv: TEMPLATE_PATH\n")
+	argAzureTenantID := flag.String("azure-tenant-id", "", "Azure tenant ID\nAZURE_TENANT_ID\n")
+	argAzureClientID := flag.String("azure-client-id", "", "Azure client ID\nAZURE_CLIENT_ID\n")
+	argAzureClientSecret := flag.String("azure-client-secret", "", "Azure client Secret\nAZURE_CLIENT_SECRET\n")
+	argAzureVault := flag.String("azure-vault", "", "Azure keyvault storage URL - https://example-key-vault.vault.azure.net/\nAZURE_VAULT\n")
+
 	c.Debug = flag.Bool("debug", false, "Enable debug information\n")
 
 	flag.Parse()
@@ -96,6 +105,40 @@ func initializeConfiguration() applicationConfig {
 		c.AWSKeySecret = *argAWSKeySecret
 	}
 
+	envAzureTenantID := os.Getenv("AZURE_TENANT_ID")
+	if envAzureTenantID != "" {
+		c.AzureTenantID = envAzureTenantID
+	}
+	if *argAWSKeySecret != "" {
+		c.AzureTenantID = *argAzureTenantID
+	}
+
+	envAzureClientID := os.Getenv("AZURE_CLIENT_ID")
+	if envAzureClientID != "" {
+		c.AzureClientID = envAzureClientID
+	}
+	if *argAWSKeySecret != "" {
+		c.AzureClientID = *argAzureClientID
+	}
+
+	envAzureClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
+	if envAzureClientSecret != "" {
+		c.AzureClientSecret = envAzureClientSecret
+	}
+	if *argAWSKeySecret != "" {
+		c.AzureClientSecret = *argAzureClientSecret
+	}
+
+	envAzureVault := os.Getenv("AZURE_VAULT")
+	if envAzureVault != "" {
+		c.AzureVault = envAzureVault
+		c.SecretProvider = "azure"
+	}
+	if *argAWSKeySecret != "" {
+		c.AzureVault = *argAzureVault
+		c.SecretProvider = "azure"
+	}
+
 	// template
 	envTemplatePath := os.Getenv("TEMPLATE_PATH")
 	if envTemplatePath != "" {
@@ -129,6 +172,13 @@ func main() {
 
 	case "aws":
 		secrets, err = getAWSSecretString(config.AWSSecretName, config.AWSRegion, config.AWSKeyID, config.AWSKeySecret)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+			os.Exit(1)
+		}
+
+	case "azure":
+		secrets, err = getAzureSecrets(config.AzureVault)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 			os.Exit(1)

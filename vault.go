@@ -32,6 +32,7 @@ func getVaultLoginURL(URL string) (string, error) {
 func getVaultSecret(URL, authToken string) (string, error) {
 	var secrets string
 	var parsedResponse map[string]interface{}
+	var parsedResponseSecretData interface{}
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: vaultSkipTLS}
 	client := &http.Client{
@@ -65,11 +66,19 @@ func getVaultSecret(URL, authToken string) (string, error) {
 
 	if parsedResponse["data"].(map[string]interface{})["metadata"] != nil {
 		// vault v2 secret
-		secrets, err = mapToJSON(parsedResponse["data"].(map[string]interface{})["data"])
+		parsedResponseSecretData = parsedResponse["data"].(map[string]interface{})["data"]
 	} else {
 		// vault v1 secret
-		secrets, err = mapToJSON(parsedResponse["data"].(map[string]interface{}))
+		parsedResponseSecretData = parsedResponse["data"].(map[string]interface{})
 	}
+
+	// convert map of interface to JSON string
+	secretsJSON, err := json.Marshal(parsedResponseSecretData)
+	if err != nil {
+		return secrets, err
+	}
+
+	secrets = string(secretsJSON)
 
 	return secrets, nil
 }
