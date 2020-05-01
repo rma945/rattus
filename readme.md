@@ -51,6 +51,13 @@ Rattus support [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-
 - [Azure Service provider credentials](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?view=azure-cli-latest)
 - [Azure Managed Service Identity](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview/)
 
+## Google SecretManager
+
+Rattus support [Google SecretManager](https://cloud.google.com/secret-manager) througt followed auth methods: 
+
+- [Google Service account keys](https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account)
+- [Google Service account](https://cloud.google.com/iam/docs/service-accounts)
+
 # Configuration options
 
 Rattus supports configuration through flags or through environment variables. The preferred way to work with Rattus - use environment variables, because in that case - you don't need to change the credentials initialization workflow for your application.
@@ -81,11 +88,11 @@ Rattus supports configuration through flags or through environment variables. Th
 -azure-vault string
   Azure keyvault storage URL - https://example-key-vault.vault.azure.net/
   env: AZURE_VAULT
+
+-google-secret string
+  Google SecretManager secret - projects/xxxxxxxxxxx/secrets/example-secret/versions/latest 
+  env: GOOGLE_SECRET
  
--template string
-  Path to template file - /app/config/production.template
-  env: TEMPLATE_PATH
-  
 -vault-secret string
   Vault secret URL - https://vault.example.io/v1/storage/secret
   env: VAULT_SECRET
@@ -93,6 +100,10 @@ Rattus supports configuration through flags or through environment variables. Th
 -vault-token string
   Vault authentication token
   env: VAULT_TOKEN
+
+-template string
+  Path to template file - /app/config/production.template
+  env: TEMPLATE_PATH
 
 -debug
     Enable debug information

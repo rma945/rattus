@@ -1,4 +1,4 @@
 *.template
 go.sum
-rattus
+rattus*
 /release/*

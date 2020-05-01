@@ -21,6 +21,7 @@ type applicationConfig struct {
 	AzureClientID          string
 	AzureClientSecret      string
 	AzureVault             string
+	GoogleSecret           string
 	Debug                  *bool
 }
 
@@ -33,15 +34,19 @@ func initializeConfiguration() applicationConfig {
 	// cli arguments
 	argVaultSecret := flag.String("vault-secret", "", "Vault secret URL - https://vault.example.io/v1/storage/secret\nenv: VAULT_SECRET\n")
 	argVaultToken := flag.String("vault-token", "", "Vault authentication token\nenv: VAULT_TOKEN")
+
 	argAWSSecretName := flag.String("aws-secret-name", "", "AWS secret name - example-project-backend\nenv: AWS_SECRET_NAME\n")
 	argAWSRegion := flag.String("aws-region", "", "AWS region - us-east-1\nenv: AWS_DEFAULT_REGION\n")
 	argAWSKeyID := flag.String("aws-key-id", "", "AWS account ID\nenv: AWS_ACCESS_KEY_ID\n")
 	argAWSKeySecret := flag.String("aws-key-secret", "", "AWS account secret\nAWS_SECRET_ACCESS_KEY\n")
+
 	argTemplatePath := flag.String("template", "", "Path to template file - /app/config/production.template\nenv: TEMPLATE_PATH\n")
 	argAzureTenantID := flag.String("azure-tenant-id", "", "Azure tenant ID\nenv: AZURE_TENANT_ID\n")
 	argAzureClientID := flag.String("azure-client-id", "", "Azure client ID\nenv: AZURE_CLIENT_ID\n")
 	argAzureClientSecret := flag.String("azure-client-secret", "", "Azure client Secret\nenv: AZURE_CLIENT_SECRET\n")
 	argAzureVault := flag.String("azure-vault", "", "Azure keyvault storage URL - https://example-key-vault.vault.azure.net/\nenv: AZURE_VAULT\n")
+
+	argGoogleSecret := flag.String("google-secret", "", "Google SecretManager secret - projects/xxxxxxxxxxx/secrets/example-secret/versions/latest \nenv: GOOGLE_SECRET\n")
 
 	c.Debug = flag.Bool("debug", false, "Enable debug information\n")
 
@@ -139,6 +144,16 @@ func initializeConfiguration() applicationConfig {
 		c.SecretProvider = "azure"
 	}
 
+	envGoogleSecret := os.Getenv("GOOGLE_SECRET")
+	if envAzureVault != "" {
+		c.GoogleSecret = envGoogleSecret
+		c.SecretProvider = "google"
+	}
+	if *argGoogleSecret != "" {
+		c.GoogleSecret = *argGoogleSecret
+		c.SecretProvider = "google"
+	}
+
 	// template
 	envTemplatePath := os.Getenv("TEMPLATE_PATH")
 	if envTemplatePath != "" {
@@ -179,6 +194,13 @@ func main() {
 
 	case "azure":
 		secrets, err = getAzureSecrets(config.AzureVault)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+			os.Exit(1)
+		}
+
+	case "google":
+		secrets, err = getGoogleSecrets(config.GoogleSecret)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 			os.Exit(1)
