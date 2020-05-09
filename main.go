@@ -145,7 +145,7 @@ func initializeConfiguration() applicationConfig {
 	}
 
 	envGoogleSecret := os.Getenv("GOOGLE_SECRET")
-	if envAzureVault != "" {
+	if envGoogleSecret != "" {
 		c.GoogleSecret = envGoogleSecret
 		c.SecretProvider = "google"
 	}
@@ -173,7 +173,7 @@ func main() {
 	config := initializeConfiguration()
 
 	if *config.Debug {
-		fmt.Printf("Secret provider: %s", config.SecretProvider)
+		fmt.Printf("Secret provider: %s\n", config.SecretProvider)
 	}
 
 	// get secrets
