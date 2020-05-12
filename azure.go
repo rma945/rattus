@@ -12,7 +12,7 @@ import (
 const azureKeyVaultResourceURL = "https://vault.azure.net"
 
 func getAzureSecrets(azureVault string) (string, error) {
-	var azureSecrets string
+	var azureSecrets string = ""
 
 	azureBasicClient := keyvault.New()
 	azureAuthorizer, err := auth.NewAuthorizerFromEnvironmentWithResource(azureKeyVaultResourceURL)
@@ -25,14 +25,27 @@ func getAzureSecrets(azureVault string) (string, error) {
 		return azureSecrets, err
 	}
 
+	// retrive all secrets from keyVault
 	secretsList := make(map[string]string)
-	for _, secret := range vaultSecretsList.Values() {
-		secretValue, err := azureBasicClient.GetSecret(context.Background(), azureVault, path.Base(*secret.ID), "")
-		if err == nil {
-			secretsList[path.Base(*secret.ID)] = *secretValue.Value
+	for {
+		// retrive values from keyVault secrets
+		for _, secret := range vaultSecretsList.Values() {
+			secretValue, err := azureBasicClient.GetSecret(context.Background(), azureVault, path.Base(*secret.ID), "")
+			if err == nil {
+				secretsList[path.Base(*secret.ID)] = *secretValue.Value
+			}
+		}
+		// retrive next page of secrets from keyVault
+		if err := vaultSecretsList.NextWithContext(context.Background()); err != nil {
+			return azureSecrets, err
+		}
+		// check that all secrets was already retrieved
+		if len(vaultSecretsList.Values()) == 0 {
+			break
 		}
 	}
 
+	// convert secrets map to json
 	JSON, err := json.Marshal(secretsList)
 	if err != nil {
 		return azureSecrets, err
