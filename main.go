@@ -36,11 +36,11 @@ func initializeConfiguration() applicationConfig {
 	argVaultToken := flag.String("vault-token", "", "Vault authentication token\nenv: VAULT_TOKEN")
 
 	argAWSSecretName := flag.String("aws-secret-name", "", "AWS secret name - example-project-backend\nenv: AWS_SECRET_NAME\n")
-	argAWSRegion := flag.String("aws-region", "", "AWS region - us-east-1\nenv: AWS_DEFAULT_REGION\n")
+	argAWSRegion := flag.String("aws-region", "", "AWS region - us-east-1\nenv: AWS_DEFAULT_REGION or AWS_REGION\n")
 	argAWSKeyID := flag.String("aws-key-id", "", "AWS account ID\nenv: AWS_ACCESS_KEY_ID\n")
 	argAWSKeySecret := flag.String("aws-key-secret", "", "AWS account secret\nAWS_SECRET_ACCESS_KEY\n")
 
-	argTemplatePath := flag.String("template", "", "Path to template file - /app/config/production.template\nenv: TEMPLATE_PATH\n")
+	argTemplatePath := flag.String("template", "", "Path to template file - /app/config/production.template\nenv: TEMPLATE\n")
 	argAzureTenantID := flag.String("azure-tenant-id", "", "Azure tenant ID\nenv: AZURE_TENANT_ID\n")
 	argAzureClientID := flag.String("azure-client-id", "", "Azure client ID\nenv: AZURE_CLIENT_ID\n")
 	argAzureClientSecret := flag.String("azure-client-secret", "", "Azure client Secret\nenv: AZURE_CLIENT_SECRET\n")
@@ -83,11 +83,18 @@ func initializeConfiguration() applicationConfig {
 		c.SecretProvider = "aws"
 	}
 
+	// aws default region
+	envAWSDefaultRegion := os.Getenv("AWS_DEFAULT_REGION")
+	if envAWSDefaultRegion != "" {
+		c.AWSRegion = envAWSDefaultRegion
+	}
+
 	// aws region
-	envAWSRegion := os.Getenv("AWS_DEFAULT_REGION")
+	envAWSRegion := os.Getenv("AWS_REGION")
 	if envAWSRegion != "" {
 		c.AWSRegion = envAWSRegion
 	}
+
 	if *argAWSRegion != "" {
 		c.AWSRegion = *argAWSRegion
 	}
@@ -154,12 +161,17 @@ func initializeConfiguration() applicationConfig {
 		c.SecretProvider = "google"
 	}
 
-	// template
+	// old template path variable for a versions compatability
 	envTemplatePath := os.Getenv("TEMPLATE_PATH")
 	if envTemplatePath != "" {
 		c.TemplatePath = envTemplatePath
 	}
-	if *argTemplatePath != "" {
+  // template
+	envTemplate := os.Getenv("TEMPLATE")
+	if envTemplate != "" {
+		c.TemplatePath = envTemplate
+	}
+  if *argTemplatePath != "" {
 		c.TemplatePath = *argTemplatePath
 	}
 
