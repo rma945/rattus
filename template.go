@@ -2,72 +2,83 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"text/template"
 	"time"
 )
 
+// template timestamp function
 func templateDatetime() string {
 	timeNow := time.Now()
 	return timeNow.Format("2006-01-02-15:04:05")
 }
 
+// template base64 decode function
+func templateBase64Decode(encodedString string) string {
+	decodedString, err := base64.StdEncoding.DecodeString(encodedString)
+	if err != nil {
+		return "<failed to decode base64>"
+	}
+	return string(decodedString)
+}
+
 // register custom go template functions
 func registerTemplateFunctions() template.FuncMap {
 	return template.FuncMap{
-		"datetime": templateDatetime,
+		"datetime":     templateDatetime,
+		"base64decode": templateBase64Decode,
 	}
 }
 
 // render template
 func generateTemplate(templatePath string, values map[string]interface{}) (string, error) {
-	var renderedTemplate string
-
 	templateFileContent, err := ioutil.ReadFile(templatePath)
 	if err != nil {
-		return renderedTemplate, err
+		return "", err
 	}
 
-	templateFunctions := registerTemplateFunctions()
-	templateRender, err := template.New("template").Funcs(templateFunctions).Parse(string(templateFileContent))
+	templateRender, err := template.New("template").Funcs(registerTemplateFunctions()).Parse(string(templateFileContent))
 	if err != nil {
-		return renderedTemplate, err
+		return "", err
 	}
 
 	templateRederBuffer := &bytes.Buffer{}
 	err = templateRender.Execute(templateRederBuffer, values)
 	if err != nil {
-		return renderedTemplate, err
+		return "", err
 	}
-	renderedTemplate = templateRederBuffer.String()
 
-	return renderedTemplate, nil
+	return templateRederBuffer.String(), nil
 }
 
 // render template or return plain secrets text
-func renderOutput(secretsString, templatePath string) (string, error) {
-	var secretsMap map[string]interface{}
-	var secretsOutput string
+func renderOutput(secrets []string, templatePath string) (string, error) {
+	var mergedSecrets map[string]interface{}
+	var output string
 	var err error
 
-	secretsOutput = secretsString
-
-	// try to convert json secrets to map interfaces or return plan secret value
-	err = json.Unmarshal([]byte(secretsString), &secretsMap)
-	if err != nil {
-		return secretsOutput, nil
+	// merge list of secrets into single one or return them as plain text
+	if mergedSecrets, err = mergeSecretListToMap(secrets); err != nil {
+		return strings.Join(secrets, "\n"), nil
 	}
 
 	// render secrets as template
 	if templatePath != "" {
-		secretsOutput, err = generateTemplate(templatePath, secretsMap)
+		output, err = generateTemplate(templatePath, mergedSecrets)
 		if err != nil {
-			return secretsOutput, fmt.Errorf("failed to render secrets template - %s", err)
+			return "", fmt.Errorf("failed to render secrets template - %s", err)
+		}
+	} else {
+		secretsJSON, err := json.Marshal(mergedSecrets)
+		output = string(secretsJSON)
+		if err != nil {
+			return "", fmt.Errorf("failed to render map of secrets as json - %s", err)
 		}
 	}
 
-	// return plain json
-	return secretsOutput, nil
+	return output, nil
 }

@@ -29,7 +29,7 @@ func getVaultLoginURL(URL string) (string, error) {
 }
 
 // get secret from vault
-func getVaultSecret(URL, authToken string) (string, error) {
+func vaultGetSecretData(URL, authToken string) (string, error) {
 	var secrets string
 	var parsedResponse map[string]interface{}
 	var parsedResponseSecretData interface{}
@@ -84,9 +84,9 @@ func getVaultSecret(URL, authToken string) (string, error) {
 }
 
 // get secret from vault
-func vaultGetSecret(config applicationConfig) (string, error) {
+func vaultGetSecret(config applicationConfig) ([]string, error) {
 	vaultToken := config.VaultToken
-	var secrets string
+	var secrets []string
 	var err error
 
 	// issue new vault token if it was not set from config
@@ -97,9 +97,12 @@ func vaultGetSecret(config applicationConfig) (string, error) {
 		}
 	}
 
-	secrets, err = getVaultSecret(config.VaultSecretURL, vaultToken)
-	if err != nil {
-		return secrets, fmt.Errorf("failed to retrive vault secrets - %s", err)
+	for _, v := range stringToList(config.VaultSecretURL) {
+		secretData, err := vaultGetSecretData(v, vaultToken)
+		secrets = append(secrets, secretData)
+		if err != nil {
+			return secrets, fmt.Errorf("failed to retrive vault secrets - %s", err)
+		}
 	}
 
 	return secrets, nil
