@@ -14,17 +14,10 @@ type applicationConfig struct {
 	K8SServiceAccountToken string
 	TemplatePath           string
 	VaultToken             string
-	VaultSecretURL         string
-	AWSSecretName          string
-	AWSRegion              string
-	AWSKeyID               string
-	AWSKeySecret           string
-	AWSSessionToken        string
-	AzureTenantID          string
-	AzureClientID          string
-	AzureClientSecret      string
-	AzureVault             string
-	GoogleSecret           string
+	secretVault            string
+	secretAWS              string
+	secretAzure            string
+	secretGoogle           string
 	Debug                  *bool
 }
 
@@ -32,40 +25,17 @@ func initializeConfiguration() applicationConfig {
 	// default configuration
 	c := &applicationConfig{}
 	c.SecretProvider = "none"
-	c.AWSRegion = "us-east-1"
 
 	// cli arguments
-	argVaultSecret := flag.String("vault-secret", "", "Vault secret URL - https://vault.example.io/v1/storage/secret\nenv: VAULT_SECRET\n")
 	argVaultToken := flag.String("vault-token", "", "Vault authentication token\nenv: VAULT_TOKEN")
-
-	argAWSSecretName := flag.String("aws-secret-name", "", "AWS secret name - example-project-backend\nenv: AWS_SECRET_NAME\n")
-	argAWSRegion := flag.String("aws-region", "", "AWS region - us-east-1\nenv: AWS_DEFAULT_REGION or AWS_REGION\n")
-	argAWSKeyID := flag.String("aws-key-id", "", "AWS account ID\nenv: AWS_ACCESS_KEY_ID\n")
-	argAWSKeySecret := flag.String("aws-key-secret", "", "AWS account secret\nAWS_SECRET_ACCESS_KEY\n")
-	argAWSSessionToken := flag.String("aws-session-token", "", "AWS session token\nAWS_SESSION_TOKEN\n")
-
+	argSecretVault := flag.String("vault-secret", "", "Vault secret URL - https://vault.example.io/v1/storage/secret\nenv: VAULT_SECRET\n")
+	argSecretAWS := flag.String("aws-secret", "", "AWS secret name - example-project-backend\nenv: AWS_SECRET\n")
+	argSecretAzure := flag.String("azure-secret", "", "Azure keyvault secret URL - https://example-vault.vault.azure.net/secrets/example-secret\nenv: AZURE_SECRET\n")
+	argSecretGoogle := flag.String("google-secret", "", "Google SecretManager secret - projects/xxxxxxxxxxx/secrets/example-secret/versions/latest \nenv: GOOGLE_SECRET\n")
 	argTemplatePath := flag.String("template", "", "Path to template file - /app/config/production.template\nenv: TEMPLATE\n")
-	argAzureTenantID := flag.String("azure-tenant-id", "", "Azure tenant ID\nenv: AZURE_TENANT_ID\n")
-	argAzureClientID := flag.String("azure-client-id", "", "Azure client ID\nenv: AZURE_CLIENT_ID\n")
-	argAzureClientSecret := flag.String("azure-client-secret", "", "Azure client Secret\nenv: AZURE_CLIENT_SECRET\n")
-	argAzureVault := flag.String("azure-vault", "", "Azure keyvault storage URL - https://example-key-vault.vault.azure.net/\nenv: AZURE_VAULT\n")
-
-	argGoogleSecret := flag.String("google-secret", "", "Google SecretManager secret - projects/xxxxxxxxxxx/secrets/example-secret/versions/latest \nenv: GOOGLE_SECRET\n")
-
 	c.Debug = flag.Bool("debug", false, "Enable debug information\n")
 
 	flag.Parse()
-
-	// vault secret
-	envVaultSecret := os.Getenv("VAULT_SECRET")
-	if envVaultSecret != "" {
-		c.VaultSecretURL = envVaultSecret
-		c.SecretProvider = "vault"
-	}
-	if *argVaultSecret != "" {
-		c.VaultSecretURL = *argVaultSecret
-		c.SecretProvider = "vault"
-	}
 
 	// vault token
 	envVaultToken := os.Getenv("VAULT_TOKEN")
@@ -76,109 +46,50 @@ func initializeConfiguration() applicationConfig {
 		c.VaultToken = *argVaultToken
 	}
 
-	// aws secret name
-	envAWSSecretName := os.Getenv("AWS_SECRET_NAME")
-	if envAWSSecretName != "" {
-		c.AWSSecretName = envAWSSecretName
-		c.SecretProvider = "aws"
+	// vault secret
+	envSecretVault := os.Getenv("VAULT_SECRET")
+	if envSecretVault != "" {
+		c.secretVault = envSecretVault
+		c.SecretProvider = "vault"
 	}
-	if *argAWSSecretName != "" {
-		c.AWSSecretName = *argAWSSecretName
-		c.SecretProvider = "aws"
-	}
-
-	// aws default region
-	envAWSDefaultRegion := os.Getenv("AWS_DEFAULT_REGION")
-	if envAWSDefaultRegion != "" {
-		c.AWSRegion = envAWSDefaultRegion
-	}
-
-	// aws region
-	envAWSRegion := os.Getenv("AWS_REGION")
-	if envAWSRegion != "" {
-		c.AWSRegion = envAWSRegion
-	}
-
-	if *argAWSRegion != "" {
-		c.AWSRegion = *argAWSRegion
-	}
-
-	// aws id
-	envAWSKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
-	if envAWSKeyID != "" {
-		c.AWSKeyID = envAWSKeyID
-	}
-	if *argAWSKeyID != "" {
-		c.AWSKeyID = *argAWSKeyID
+	if *argSecretVault != "" {
+		c.secretVault = *argSecretVault
+		c.SecretProvider = "vault"
 	}
 
 	// aws secret
-	envAWSKeySecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	if envAWSKeySecret != "" {
-		c.AWSKeySecret = envAWSKeySecret
+	envSecretAWS := os.Getenv("AWS_SECRET")
+	if envSecretAWS != "" {
+		c.secretAWS = envSecretAWS
+		c.SecretProvider = "aws"
 	}
-	if *argAWSKeySecret != "" {
-		c.AWSKeySecret = *argAWSKeySecret
-	}
-
-	// aws session token
-	envAWSSessionToken := os.Getenv("AWS_SESSION_TOKEN")
-	if envAWSSessionToken != "" {
-		c.AWSSessionToken = envAWSSessionToken
-	}
-	if *argAWSSessionToken != "" {
-		c.AWSSessionToken = *argAWSSessionToken
+	if *argSecretAWS != "" {
+		c.secretAWS = *argSecretAWS
+		c.SecretProvider = "aws"
 	}
 
-	envAzureTenantID := os.Getenv("AZURE_TENANT_ID")
-	if envAzureTenantID != "" {
-		c.AzureTenantID = envAzureTenantID
-	}
-	if *argAWSKeySecret != "" {
-		c.AzureTenantID = *argAzureTenantID
-	}
-
-	envAzureClientID := os.Getenv("AZURE_CLIENT_ID")
-	if envAzureClientID != "" {
-		c.AzureClientID = envAzureClientID
-	}
-	if *argAWSKeySecret != "" {
-		c.AzureClientID = *argAzureClientID
-	}
-
-	envAzureClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
-	if envAzureClientSecret != "" {
-		c.AzureClientSecret = envAzureClientSecret
-	}
-	if *argAWSKeySecret != "" {
-		c.AzureClientSecret = *argAzureClientSecret
-	}
-
-	envAzureVault := os.Getenv("AZURE_VAULT")
+	// azure secret
+	envAzureVault := os.Getenv("AZURE_SECRET")
 	if envAzureVault != "" {
-		c.AzureVault = envAzureVault
+		c.secretAzure = envAzureVault
 		c.SecretProvider = "azure"
 	}
-	if *argAWSKeySecret != "" {
-		c.AzureVault = *argAzureVault
+	if *argSecretAzure != "" {
+		c.secretAzure = *argSecretAzure
 		c.SecretProvider = "azure"
 	}
 
-	envGoogleSecret := os.Getenv("GOOGLE_SECRET")
-	if envGoogleSecret != "" {
-		c.GoogleSecret = envGoogleSecret
+	// google secret
+	envSecretGoogle := os.Getenv("GOOGLE_SECRET")
+	if envSecretGoogle != "" {
+		c.secretGoogle = envSecretGoogle
 		c.SecretProvider = "google"
 	}
-	if *argGoogleSecret != "" {
-		c.GoogleSecret = *argGoogleSecret
+	if *argSecretGoogle != "" {
+		c.secretGoogle = *argSecretGoogle
 		c.SecretProvider = "google"
 	}
 
-	// old template path variable for a versions compatability
-	envTemplatePath := os.Getenv("TEMPLATE_PATH")
-	if envTemplatePath != "" {
-		c.TemplatePath = envTemplatePath
-	}
 	// template
 	envTemplate := os.Getenv("TEMPLATE")
 	if envTemplate != "" {

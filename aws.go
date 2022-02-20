@@ -4,38 +4,21 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 )
 
-func createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken string) (*session.Session, error) {
-	var awsCredentials *credentials.Credentials
-	var awsSession *session.Session
-
-	if (AWSKeyID != "") && (AWSKeySecret != "") {
-		awsCredentials = credentials.NewStaticCredentials(AWSKeyID, AWSKeySecret, AWSSessionToken)
-	}
-
-	awsSession, err := session.NewSession(&aws.Config{
-		Region:      aws.String(AWSRegion),
-		Credentials: awsCredentials,
-	})
-
-	return awsSession, err
-}
-
-func getAWSSecretString(AWSSecrets, AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken string) ([]string, error) {
+// get secrets from aws secret storage
+func getsecretAWSString(secretAWS string) ([]string, error) {
 	var secrets []string
 
-	awsSession, err := createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken)
-	if err != nil {
-		return secrets, err
-	}
+	awsSession := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
 
 	awsService := secretsmanager.New(awsSession)
 
-	for _, s := range stringToList(AWSSecrets) {
+	for _, s := range stringToList(secretAWS) {
 		awsRequest := &secretsmanager.GetSecretValueInput{
 			SecretId:     aws.String(s),
 			VersionStage: aws.String("AWSCURRENT"),
@@ -51,5 +34,5 @@ func getAWSSecretString(AWSSecrets, AWSRegion, AWSKeyID, AWSKeySecret, AWSSessio
 		}
 	}
 
-	return secrets, err
+	return secrets, nil
 }

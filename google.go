@@ -8,25 +8,25 @@ import (
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 )
 
-func getGoogleSecrets(googleSecret string) (string, error) {
-	var googleSecrets string
+func getsecretGoogles(secretGoogle string) (string, error) {
+	var secretGoogles string
 
 	googleClientContext := context.Background()
 	googleClient, err := secretmanager.NewClient(googleClientContext)
 	if err != nil {
-		return googleSecrets, err
+		return secretGoogles, err
 	}
 
 	accessRequest := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: googleSecret,
+		Name: secretGoogle,
 	}
 
 	resonse, err := googleClient.AccessSecretVersion(googleClientContext, accessRequest)
 	if err != nil {
-		return googleSecrets, err
+		return secretGoogles, err
 	}
 
-	googleSecrets = fmt.Sprintf("%s", resonse.Payload.Data)
+	secretGoogles = fmt.Sprintf("%s", resonse.Payload.Data)
 
-	return googleSecrets, err
+	return secretGoogles, err
 }

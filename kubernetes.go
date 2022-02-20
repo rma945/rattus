@@ -43,12 +43,12 @@ func getK8SServiceRole() (string, error) {
 }
 
 // getVaultAuthToken - login at vault and retrive vault auth token
-func getVaultAuthToken(vaultSecretURL, authToken, authRole string) (string, error) {
+func getVaultAuthToken(secretVaultURL, authToken, authRole string) (string, error) {
 	var token string
 	var parsedResponse map[string]interface{}
 	var requstPayload = []byte(fmt.Sprintf(`{"jwt": "%s", "role": "%s"}`, authToken, authRole))
 
-	vaultLoginURL, err := getVaultLoginURL(vaultSecretURL)
+	vaultLoginURL, err := getVaultLoginURL(secretVaultURL)
 	if err != nil {
 		return token, err
 	}
@@ -87,7 +87,7 @@ func getVaultAuthToken(vaultSecretURL, authToken, authRole string) (string, erro
 	return token, nil
 }
 
-func getK8SVaultToken(vaultSecretURL string) (string, error) {
+func getK8SVaultToken(secretVaultURL string) (string, error) {
 	var token string
 	serviceToken, err := getK8SServiceAccountToken()
 	if err != nil {
@@ -99,7 +99,7 @@ func getK8SVaultToken(vaultSecretURL string) (string, error) {
 		return token, fmt.Errorf("failed to get k8s namespace - %s", err)
 	}
 
-	token, err = getVaultAuthToken(vaultSecretURL, serviceToken, serviceRole)
+	token, err = getVaultAuthToken(secretVaultURL, serviceToken, serviceRole)
 	if err != nil {
 		return token, fmt.Errorf("failed to auth at vault - %s", err)
 	}

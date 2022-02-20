@@ -2,56 +2,41 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"path"
+	"fmt"
+	"net/url"
+	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/keyvault"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
 )
 
-const azureKeyVaultResourceURL = "https://vault.azure.net"
+// get secrets from azure vault
+func getsecretAzures(secretAzure string) ([]string, error) {
+	var secrets []string
 
-func getAzureSecrets(azureVault string) (string, error) {
-	var azureSecrets string = ""
-
-	azureBasicClient := keyvault.New()
-	azureAuthorizer, err := auth.NewAuthorizerFromEnvironmentWithResource(azureKeyVaultResourceURL)
-	if err == nil {
-		azureBasicClient.Authorizer = azureAuthorizer
-	}
-
-	vaultSecretsList, err := azureBasicClient.GetSecrets(context.Background(), azureVault, nil)
+	azureCredentials, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return azureSecrets, err
+		return secrets, err
 	}
 
-	// retrive all secrets from keyVault
-	secretsList := make(map[string]string)
-	for {
-		// retrive values from keyVault secrets
-		for _, secret := range vaultSecretsList.Values() {
-			secretValue, err := azureBasicClient.GetSecret(context.Background(), azureVault, path.Base(*secret.ID), "")
-			if err == nil {
-				secretsList[path.Base(*secret.ID)] = *secretValue.Value
-			}
+	for _, s := range stringToList(secretAzure) {
+		parsedSecretURL, err := url.Parse(s)
+		if err != nil {
+			return secrets, err
 		}
-		// retrive next page of secrets from keyVault
-		if err := vaultSecretsList.NextWithContext(context.Background()); err != nil {
-			return azureSecrets, err
+
+		azureVaultClient, err := azsecrets.NewClient(fmt.Sprintf("https://%s", parsedSecretURL.Host), azureCredentials, nil)
+		if err != nil {
+			return secrets, err
 		}
-		// check that all secrets was already retrieved
-		if len(vaultSecretsList.Values()) == 0 {
-			break
+
+		resp, err := azureVaultClient.GetSecret(context.TODO(), strings.TrimPrefix(parsedSecretURL.Path, "/secrets/"), nil)
+		if err != nil {
+			return secrets, err
 		}
+
+		secrets = append(secrets, *resp.Value)
 	}
 
-	// convert secrets map to json
-	JSON, err := json.Marshal(secretsList)
-	if err != nil {
-		return azureSecrets, err
-	}
-
-	azureSecrets = string(JSON)
-
-	return azureSecrets, err
+	return secrets, nil
 }

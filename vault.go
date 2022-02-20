@@ -16,7 +16,7 @@ const requestTimeout = 10
 
 const vaultAuthEndpoint = "/v1/auth/kubernetes/login"
 
-// generate url to k8s login provider from VaultSecretURL
+// generate url to k8s login provider from secretVaultURL
 func getVaultLoginURL(URL string) (string, error) {
 	var vaultAuthURL string
 	parsedURL, err := url.Parse(URL)
@@ -84,20 +84,20 @@ func vaultGetSecretData(URL, authToken string) (string, error) {
 }
 
 // get secret from vault
-func vaultGetSecret(config applicationConfig) ([]string, error) {
+func getsecretVaults(config applicationConfig) ([]string, error) {
 	vaultToken := config.VaultToken
 	var secrets []string
 	var err error
 
 	// issue new vault token if it was not set from config
 	if config.VaultToken == "" {
-		vaultToken, err = getK8SVaultToken(config.VaultSecretURL)
+		vaultToken, err = getK8SVaultToken(config.secretVault)
 		if err != nil {
 			return secrets, err
 		}
 	}
 
-	for _, v := range stringToList(config.VaultSecretURL) {
+	for _, v := range stringToList(config.secretVault) {
 		secretData, err := vaultGetSecretData(v, vaultToken)
 		secrets = append(secrets, secretData)
 		if err != nil {
