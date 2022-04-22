@@ -30,12 +30,12 @@ func getsecretAzures(secretAzure string) ([]string, error) {
 			return secrets, err
 		}
 
-		resp, err := azureVaultClient.GetSecret(context.TODO(), strings.TrimPrefix(parsedSecretURL.Path, "/secrets/"), nil)
+		resonse, err := azureVaultClient.GetSecret(context.TODO(), strings.TrimPrefix(parsedSecretURL.Path, "/secrets/"), nil)
 		if err != nil {
 			return secrets, err
 		}
 
-		secrets = append(secrets, *resp.Value)
+		secrets = append(secrets, *resonse.Value)
 	}
 
 	return secrets, nil
